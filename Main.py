@@ -1,3 +1,5 @@
+from random import randint
+
 import pygame
 
 # Set display surface
@@ -58,7 +60,7 @@ color: GREEN
 background: DARKGREEN
 rect location: topleft = (10, 10)  
 '''
-score_text = font.render("Score: " + str(score), True, GREEN, DARKGREEN)
+score_text = font.render("Score : " + str(score), True, GREEN, DARKGREEN)
 score_rect = score_text.get_rect()
 score_rect.topleft = (10, 10)
 
@@ -86,10 +88,9 @@ color: GREEN
 background: DARKGREEN
 rect location: topright = (WINDOW_WIDTH - 10, 10) 
 '''
-lives_text = font.render("Lives" + str(score), True, GREEN, DARKGREEN)
+lives_text = font.render("Lives :" + str(score), True, GREEN, DARKGREEN)
 lives_rect = lives_text.get_rect()
-lives_rect  = topright = WINDOW_WIDTH - 10
-lives_rect.y = 10
+lives_rect  = topright = (WINDOW_WIDTH -150, 10)
 # Set Text for Game Over (Similar to Score)
 '''
 variable names:  game_over_text , game_over_rect 
@@ -114,7 +115,7 @@ rect location: center = (WINDOW_WIDTH//2, WINDOW_HEIGHT//2 + 32)
 '''
 continue_text = font.render("Press any key to play again" + str(score), True, GREEN, DARKGREEN)
 continue_rect = continue_text.get_rect()
-continue_rect = center = WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 32
+continue_rect.center = WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 32
 # Set sounds and music
 coin_sound = pygame.mixer.Sound("coin_sound.wav")
 ''' YOU do for miss_sound.  '''
@@ -144,7 +145,7 @@ rect location: y = 0.   Note this will be a rando number.  Just later.
 coin_image = pygame.image.load("coin.png")
 coin_rect = coin_image.get_rect()
 coin_rect.x = WINDOW_WIDTH + BUFFER_DISTANCE
-coin_rect.y = 0
+coin_rect.y = randint(64,WINDOW_HEIGHT - 32)
 
 pygame.mixer.music.play(-1, 0.0)
 
@@ -154,6 +155,55 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+    keys = pygame.key.get_pressed()
+    if keys [pygame.K_UP] and player_rect.top > 64:
+        player_rect.y -= PLAYER_VELOCITY
+    if keys [pygame.K_DOWN] and player_rect.bottom < WINDOW_WIDTH:
+        player_rect.y += PLAYER_VELOCITY
+
+#move the coin
+    if coin_rect.x < 0:
+        player_lives -= 1
+        miss_sound.play()
+        coin_rect.x = WINDOW_WIDTH + BUFFER_DISTANCE
+        coin_rect.y = randint(64, WINDOW_HEIGHT - 32)
+    else:
+        coin_rect.x -= coin_velocity
+
+    #check for collision (dragon eats coin
+    if player_rect.colliderect(coin_rect):
+        score += 1
+        coin_sound.play()
+        coin_velocity += COIN_ACCELERATION
+        coin_rect.x = WINDOW_WIDTH + BUFFER_DISTANCE
+        coin_rect.y = randint(64, WINDOW_HEIGHT - 32)
+
+    #update hud
+    score_text = font.render("Score :" + str(score), True, GREEN, DARKGREEN)
+
+    #check for game_over
+    if player_lives == 0:
+        ''' display_surface.blit(game_over_text, game_over_rect'''
+        display_surface.blit(game_over_text, game_over_rect)
+        ''' Display the continue text like i did for game_over_text'''
+        display_surface.blit(continue_text, coin_rect)
+        pygame.display.update
+        #Pause the game until player presses a key, then reset the game
+        is_paused = True
+        while is_paused:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    is_paused = False
+                    running = False
+                if event.type == pygame.KEYDOWN:
+                    score = 0
+                    player_lives = PLAYER_STARTING_LIVES
+                    player_rect.y = WINDOW_HEIGHT // 2
+                    coin_velocity = COIN_STARTING_VELOCITY
+                    pygame.mixer.music.play(-1, 0.0)
+                    is_paused = False
+
+
 
     # Fill the display
     display_surface.fill(BLACK)
@@ -166,7 +216,11 @@ while running:
     display_surface.blit(player_image, player_rect)
     ''' YOU DO:  blit coin_image and coin_rect'''
     display_surface.blit(coin_image, coin_rect)
+    pygame.draw.line(display_surface, WHITE, (0,64), (WINDOW_WIDTH, 64), 2)
+
     # Update display and tick the clock
+
+
 
     pygame.display.update()
     clock.tick(FPS)
